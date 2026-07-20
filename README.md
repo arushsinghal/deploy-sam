@@ -13,6 +13,11 @@ real model, real inference, real explanations, driven from a live dashboard.
 
 ## Quick start
 
+Dependencies are managed with [`uv`](https://docs.astral.sh/uv/) (`pyproject.toml` +
+`uv.lock`, pinned and reproducible). `run.sh` uses it automatically if installed,
+and falls back to a plain venv + `requirements.txt` otherwise — no setup required
+either way.
+
 ```bash
 ./run.sh              # launch API + dashboard  → http://127.0.0.1:8077
 ./run.sh --retrain    # regenerate synthetic data + retrain first
@@ -21,7 +26,9 @@ real model, real inference, real explanations, driven from a live dashboard.
 Run the tests:
 
 ```bash
-.venv/bin/python -m pytest        # 19 tests: unit + integration
+uv run pytest                     # 19 tests: unit + integration
+# or, without uv:
+.venv/bin/python -m pytest
 ```
 
 Optional — real Claude narratives instead of the deterministic template:
@@ -107,14 +114,14 @@ backend/
 frontend/
   index.html     single-file dashboard: SHAP waterfall, simulator, model metrics
 .github/workflows/deploy-risk-gate.yml   the CI status check that gates PRs
-run.sh · requirements.txt · pytest.ini
+run.sh · pyproject.toml · uv.lock · requirements.txt (pip fallback)
 ```
 
 ---
 
 ## Tests
 
-`19 passing` — run `.venv/bin/python -m pytest`.
+`19 passing` — run `uv run pytest` (or `.venv/bin/python -m pytest`).
 
 - **Unit** — tier thresholds match metadata; `None`-vs-default feature handling;
   SHAP shape + ordering; risky > safe monotonicity; NaN tolerance; recommender gate
