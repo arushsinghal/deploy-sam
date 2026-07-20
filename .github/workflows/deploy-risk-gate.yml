@@ -1,0 +1,51 @@
+# DeployIQ Gatekeeper — a GitHub Actions status check that scores a deploy
+# before it ships and BLOCKS High-risk changes unless a senior override label
+# is present. This is the "turn the score into a gate" feature from the pitch.
+name: DeployIQ Risk Gate
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+
+jobs:
+  risk-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Compute change characteristics
+        id: diff
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          LINES=$(git diff --numstat "$BASE" "$HEAD" | awk '{a+=$1+$2} END{print a+0}')
+          FILES=$(git diff --name-only "$BASE" "$HEAD" | wc -l | tr -d ' ')
+          echo "lines=$LINES" >> "$GITHUB_OUTPUT"
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+
+      - name: Score deploy with DeployIQ
+        id: score
+        run: |
+          # In CI this points at the deployed DeployIQ service; the gate is
+          # advisory until teams trust it, then flipped to blocking.
+          RESP=$(curl -s -X POST "${DEPLOYIQ_URL:-http://localhost:8077}/api/v1/score" \
+            -H 'Content-Type: application/json' \
+            -d "{\"service_name\":\"${SERVICE:-payments-api}\",
+                 \"deploy_timestamp\":\"$(date -u +%FT%TZ)\",
+                 \"lines_changed\":${{ steps.diff.outputs.lines }},
+                 \"files_changed\":${{ steps.diff.outputs.files }},
+                 \"has_rollback_plan\":${HAS_ROLLBACK:-false}}")
+          echo "$RESP"
+          TIER=$(echo "$RESP" | python3 -c "import sys,json;print(json.load(sys.stdin)['risk_score'])")
+          echo "tier=$TIER" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce gate
+        run: |
+          TIER="${{ steps.score.outputs.tier }}"
+          OVERRIDE="${{ contains(github.event.pull_request.labels.*.name, 'risk-override-approved') }}"
+          echo "DeployIQ risk tier: $TIER (override=$OVERRIDE)"
+          if [ "$TIER" = "High" ] && [ "$OVERRIDE" != "true" ]; then
+            echo "::error::High-risk deploy blocked. Requires senior 'risk-override-approved' label."
+            exit 1
+          fi
+          echo "Gate passed."

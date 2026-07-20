@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>DeployIQ — Deployment Risk Intelligence</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#131a26; --panel2:#1a2333; --line:#24304a;
+    --ink:#e6edf7; --mut:#8a99b3; --acc:#4f8cff; --acc2:#7aa2ff;
+    --low:#2ec26b; --med:#f5a524; --high:#f2545b;
+    --shadow:0 8px 30px rgba(0,0,0,.35);
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 80% -10%,#16233d 0%,var(--bg) 55%);
+       color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  a{color:inherit}
+  .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+  /* sidebar */
+  .side{border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:.2px;margin-bottom:26px}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--acc),#9b6bff);
+        display:grid;place-items:center;font-weight:800;color:#fff;box-shadow:var(--shadow)}
+  .nav button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;
+    color:var(--mut);padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;margin-bottom:2px}
+  .nav button:hover{background:var(--panel);color:var(--ink)}
+  .nav button.on{background:var(--panel2);color:var(--ink);font-weight:600}
+  .side .foot{position:absolute;bottom:18px;left:16px;right:16px;color:var(--mut);font-size:11px}
+  /* main */
+  .main{padding:26px 30px;max-width:1180px}
+  .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+  h1{font-size:22px;margin:0}
+  .sub{color:var(--mut);font-size:13px}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1.3fr 1fr}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 14px;font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-weight:700;font-size:12px}
+  .pill.Low{background:rgba(46,194,107,.14);color:var(--low)}
+  .pill.Medium{background:rgba(245,165,36,.14);color:var(--med)}
+  .pill.High{background:rgba(242,84,91,.16);color:var(--high)}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .dot.Low{background:var(--low)}.dot.Medium{background:var(--med)}.dot.High{background:var(--high)}
+  .feed{max-height:420px;overflow:auto}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:10px;cursor:pointer}
+  .row:hover{background:var(--panel2)}
+  .row .svc{font-weight:600;flex:1}
+  .row .meta{color:var(--mut);font-size:12px}
+  .bar{height:9px;border-radius:6px;background:var(--panel2);overflow:hidden}
+  .bar>span{display:block;height:100%}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .kv:last-child{border:0}
+  .kv b{font-weight:600}
+  .mut{color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .btn{background:linear-gradient(135deg,var(--acc),#6f5bff);color:#fff;border:0;padding:10px 16px;
+       border-radius:10px;font-weight:600;cursor:pointer;font-size:13px}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn:hover{filter:brightness(1.08)}
+  input,select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:9px;width:100%;font-size:13px}
+  label.fld{display:block;font-size:12px;color:var(--mut);margin:0 0 6px}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .gauge{font-size:40px;font-weight:800;letter-spacing:-1px}
+  .waterfall .wrow{display:grid;grid-template-columns:150px 1fr 62px;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+  .wlabel{color:var(--mut);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wtrack{position:relative;height:20px;background:var(--panel2);border-radius:5px}
+  .wtrack .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line)}
+  .wbar{position:absolute;top:3px;height:14px;border-radius:4px}
+  .wbar.pos{background:linear-gradient(90deg,#f2545b,#ff7a80)}
+  .wbar.neg{background:linear-gradient(90deg,#37d67a,#2ec26b)}
+  .wval{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .narr{background:var(--panel2);border-left:3px solid var(--acc);padding:12px 14px;border-radius:8px;line-height:1.6}
+  .slider{-webkit-appearance:none;height:6px;border-radius:6px;background:var(--panel2);outline:none}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--acc);cursor:pointer;box-shadow:0 0 0 4px rgba(79,140,255,.2)}
+  .simrow{margin:14px 0}
+  .simrow .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .badge{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--panel2);color:var(--mut)}
+  .note{display:flex;gap:8px;font-size:12.5px;color:var(--ink);padding:6px 0}
+  .note::before{content:"▹";color:var(--acc)}
+  .hide{display:none}
+  .metricbig{font-size:26px;font-weight:800}
+  .win{color:var(--low);font-weight:700}
+  .flash{animation:fl 1s ease}
+  @keyframes fl{0%{background:rgba(79,140,255,.25)}100%{background:transparent}}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#26324c;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">IQ</div> DeployIQ</div>
+    <nav class="nav" id="nav">
+      <button data-t="dash" class="on">📊 Dashboard</button>
+      <button data-t="score">🚀 Score a Deploy</button>
+      <button data-t="detail">🔍 Risk Detail</button>
+      <button data-t="sim">🎚️ What-If Simulator</button>
+      <button data-t="model">🧠 Model & Metrics</button>
+    </nav>
+    <div class="foot">HPE Synergy 2026 · Round 1<br/>Explainable pre-deploy risk gate</div>
+  </aside>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section id="dash">
+      <div class="head"><div><h1>Deployment Risk Overview</h1>
+        <div class="sub">Every deploy scored, explained, and gated before it ships.</div></div>
+        <button class="btn" onclick="go('score')">＋ Score a Deploy</button>
+      </div>
+      <div class="grid g3">
+        <div class="card">
+          <h3>Live Deploy Feed</h3>
+          <div class="feed" id="feed"></div>
+        </div>
+        <div class="grid" style="align-content:start">
+          <div class="card">
+            <h3>Org Risk Trend</h3>
+            <div id="trend"></div>
+          </div>
+          <div class="card">
+            <h3>Risk Distribution (this window)</h3>
+            <div id="dist"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Highest-Risk Services</h3>
+        <table id="toptbl"></table>
+      </div>
+    </section>
+
+    <!-- SCORE -->
+    <section id="score" class="hide">
+      <div class="head"><div><h1>Score a Deploy</h1>
+        <div class="sub">Simulates a CI webhook payload hitting <code>POST /api/v1/score</code>.</div></div></div>
+      <div class="grid g2">
+        <div class="card">
+          <h3>Deploy Characteristics</h3>
+          <div class="fgrid">
+            <div><label class="fld">Service</label><select id="f_service"></select></div>
+            <div><label class="fld">Deploy time</label><select id="f_hour"></select></div>
+            <div><label class="fld">Lines changed</label><input id="f_lines" type="number" value="640"/></div>
+            <div><label class="fld">Files changed</label><input id="f_files" type="number" value="11"/></div>
+            <div><label class="fld">On-call engineers</label><input id="f_oncall" type="number" value="1"/></div>
+            <div><label class="fld">Senior on call?</label><select id="f_senior"><option value="0">No</option><option value="1">Yes</option></select></div>
+            <div><label class="fld">Test coverage Δ (%)</label><input id="f_cov" type="number" value="-3.5" step="0.1"/></div>
+            <div><label class="fld">Rollback plan?</label><select id="f_rb"><option value="false">No</option><option value="true">Yes</option></select></div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn" onclick="scoreDeploy()">Score deployment</button>
+            <button class="btn ghost" onclick="preset('risky')">Load risky example</button>
+            <button class="btn ghost" onclick="preset('safe')">Load safe example</button>
+          </div>
+        </div>
+        <div class="card" id="scoreResult"><h3>Result</h3><div class="mut">Fill the form and score a deploy to see its risk, SHAP explanation, and rollout recommendation.</div></div>
+      </div>
+    </section>
+
+    <!-- DETAIL -->
+    <section id="detail" class="hide">
+      <div class="head"><div><h1 id="d_title">Risk Detail</h1><div class="sub" id="d_sub"></div></div>
+        <button class="btn ghost" onclick="go('sim')">Open in Simulator →</button></div>
+      <div id="detailBody"><div class="card mut">Select a deploy from the feed, or score one.</div></div>
+    </section>
+
+    <!-- SIMULATOR -->
+    <section id="sim" class="hide">
+      <div class="head"><div><h1>What-If Simulator</h1>
+        <div class="sub">Drag the risk drivers and watch the score re-compute live — the same model, re-run per change.</div></div></div>
+      <div id="simBody"><div class="card mut">Score or open a deploy first, then simulate alternatives.</div></div>
+    </section>
+
+    <!-- MODEL -->
+    <section id="model" class="hide">
+      <div class="head"><div><h1>Model & Metrics</h1>
+        <div class="sub">Why this is a model, not a re-skin of the data generator.</div></div></div>
+      <div id="modelBody"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const API="/api/v1";
+const TIERC={Low:"var(--low)",Medium:"var(--med)",High:"var(--high)"};
+let CURRENT=null; // last scored/opened deployment
+const $=id=>document.getElementById(id);
+const j=(u,o)=>fetch(u,o).then(r=>r.json());
+const pct=x=>Math.round(x*100)+"%";
+
+function go(t){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  ['dash','score','detail','sim','model'].forEach(s=>$(s).classList.toggle('hide',s!==t));
+  if(t==='dash')loadDash();
+  if(t==='model')loadModel();
+  if(t==='sim')renderSim();
+  window.scrollTo(0,0);
+}
+$('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.t);});
+
+/* ---------- Dashboard ---------- */
+async function loadDash(){
+  const [ov,hist]=await Promise.all([j(`${API}/overview`),j(`${API}/history?limit=40`)]);
+  // feed
+  $('feed').innerHTML=hist.deployments.map(d=>`
+    <div class="row" onclick='openDep("${d.deployment_id}")'>
+      <span class="dot ${d.risk_score}"></span>
+      <span class="svc">${d.service_name}</span>
+      <span class="pill ${d.risk_score}">${d.risk_score} ${pct(d.risk_probability)}</span>
+      <span class="meta">${(d.deploy_timestamp||'').slice(5,16).replace('T',' ')}</span>
+    </div>`).join('');
+  // distribution
+  $('dist').innerHTML=['Low','Medium','High'].map(k=>{
+    const v=ov.distribution[k]||{pct:0,count:0};
+    return `<div style="margin:10px 0">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span><span class="dot ${k}" style="display:inline-block;margin-right:6px"></span>${k}</span>
+        <span class="mut">${v.pct}% · ${v.count}</span></div>
+      <div class="bar"><span style="width:${v.pct}%;background:${TIERC[k]}"></span></div></div>`;
+  }).join('');
+  // trend sparkline
+  $('trend').innerHTML=spark(ov.org_trend.map(p=>p.avg_risk),ov.org_trend.map(p=>p.date));
+  // top table
+  $('toptbl').innerHTML=`<tr><th>Service</th><th>Avg risk</th><th>High-risk deploys</th><th>Volume</th></tr>`+
+    ov.top_risky.map(s=>`<tr><td><b>${s.service_name}</b></td>
+      <td><span class="pill ${tierOf(s.avg_risk)}">${pct(s.avg_risk)}</span></td>
+      <td>${s.high_count}</td><td class="mut">${s.n}</td></tr>`).join('');
+}
+function tierOf(p){return p<0.2?'Low':p<0.5?'Medium':'High';}
+
+function spark(vals,labels){
+  if(!vals.length)return '<div class="mut">no data</div>';
+  const W=340,H=90,pad=6,mx=Math.max(...vals,0.6),mn=Math.min(...vals,0);
+  const X=i=>pad+i*(W-2*pad)/Math.max(1,vals.length-1);
+  const Y=v=>H-pad-(v-mn)/(mx-mn||1)*(H-2*pad);
+  const pts=vals.map((v,i)=>`${X(i)},${Y(v)}`).join(' ');
+  const area=`${pad},${H-pad} `+pts+` ${W-pad},${H-pad}`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
+    <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f8cff" stop-opacity=".35"/><stop offset="1" stop-color="#4f8cff" stop-opacity="0"/>
+    </linearGradient></defs>
+    <polygon points="${area}" fill="url(#ga)"/>
+    <polyline points="${pts}" fill="none" stroke="#4f8cff" stroke-width="2"/>
+    ${vals.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="2.2" fill="#7aa2ff"/>`).join('')}
+    <text x="${pad}" y="14" fill="#8a99b3" font-size="10">avg incident prob · ${labels[0]||''} → ${labels.at(-1)||''}</text>
+  </svg>`;
+}
+
+/* ---------- Score ---------- */
+async function initForm(){
+  const {services}=await j(`${API}/services`);
+  $('f_service').innerHTML=services.map(s=>`<option value="${s.service_name}">${s.service_name} (tier ${s.criticality_tier})</option>`).join('');
+  $('f_hour').innerHTML=Array.from({length:24},(_,h)=>`<option value="${h}" ${h===23?'selected':''}>${String(h).padStart(2,'0')}:00</option>`).join('');
+}
+function preset(kind){
+  if(kind==='risky'){f_service.selectedIndex=0;f_hour.value=23;f_lines.value=880;f_files.value=16;f_oncall.value=1;f_senior.value=0;f_cov.value=-6;f_rb.value='false';}
+  else{f_hour.value=10;f_lines.value=90;f_files.value=3;f_oncall.value=4;f_senior.value=1;f_cov.value=2.5;f_rb.value='true';}
+}
+function now23(){const d=new Date();d.setHours(+f_hour.value,10,0,0);return d.toISOString();}
+async function scoreDeploy(){
+  const body={
+    service_name:f_service.value, deploy_timestamp:now23(),
+    deploy_hour:+f_hour.value,
+    lines_changed:+f_lines.value, files_changed:+f_files.value,
+    oncall_engineers_available:+f_oncall.value, is_oncall_senior:+f_senior.value,
+    test_coverage_delta:+f_cov.value, has_rollback_plan:f_rb.value==='true',
+  };
+  const r=await j(`${API}/score`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  CURRENT=r;
+  $('scoreResult').innerHTML=resultCard(r);
+}
+function resultCard(r){
+  return `<h3>Result — ${r.service_name}</h3>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
+      <div class="gauge" style="color:${TIERC[r.risk_score]}">${pct(r.risk_probability)}</div>
+      <div><span class="pill ${r.risk_score}">${r.risk_score} RISK</span>
+      <div class="mut" style="margin-top:4px">gate: <b style="color:${r.recommendation.gate_decision==='BLOCK'?'var(--high)':r.recommendation.gate_decision==='WARN'?'var(--med)':'var(--low)'}">${r.recommendation.gate_decision}</b></div></div>
+    </div>
+    <div class="narr">${r.nl_summary}</div>
+    <div style="margin-top:14px;display:flex;gap:10px">
+      <button class="btn" onclick='openDep("${r.deployment_id}")'>See SHAP explanation →</button>
+      <button class="btn ghost" onclick='go("sim")'>Simulate this deploy</button>
+    </div>`;
+}
+
+/* ---------- Detail (SHAP) ---------- */
+async function openDep(id){
+  const [ex,rc,hist]=await Promise.all([
+    j(`${API}/explain/${id}`), j(`${API}/recommend/${id}`), j(`${API}/history?limit=200`)
+  ]);
+  const dep=hist.deployments.find(d=>d.deployment_id===id)||{};
+  CURRENT={deployment_id:id, service_name:dep.service_name, risk_probability:dep.risk_probability,
+           risk_score:dep.risk_score, factors:ex.factors, nl_summary:ex.nl_summary, recommendation:rc};
+  $('d_title').textContent=dep.service_name||'Risk Detail';
+  $('d_sub').innerHTML=`commit-scored deploy · <span class="pill ${dep.risk_score}">${dep.risk_score} ${pct(dep.risk_probability||0)}</span>`;
+  $('detailBody').innerHTML=detailView(CURRENT, ex.base_value);
+  loadSimilar(id);
+  go('detail');
+}
+function detailView(r, baseLogodds){
+  const f=r.factors.slice(0,8);
+  const mx=Math.max(...f.map(x=>Math.abs(x.shap)),0.01);
+  const rows=f.map(x=>{
+    const w=Math.abs(x.shap)/mx*48, pos=x.shap>0;
+    return `<div class="wrow">
+      <div class="wlabel">${x.label}${x.value!==null&&x.value!==undefined?` = <b>${fmtv(x.value)}</b>`:''}</div>
+      <div class="wtrack"><div class="mid"></div>
+        <div class="wbar ${pos?'pos':'neg'}" style="${pos?'left:50%':`right:50%`};width:${w}%"></div></div>
+      <div class="wval" style="color:${pos?'var(--high)':'var(--low)'}">${x.shap>0?'+':''}${x.shap.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+  const rec=r.recommendation;
+  return `<div class="grid g2">
+    <div class="card">
+      <h3>SHAP Waterfall — log-odds contribution</h3>
+      <div class="mut" style="font-size:12px;margin-bottom:8px">base ${(baseLogodds||0).toFixed(2)} → prediction. Red raises incident risk, green lowers it.</div>
+      <div class="waterfall">${rows}</div>
+    </div>
+    <div class="grid" style="align-content:start">
+      <div class="card"><h3>Plain-English Explanation</h3><div class="narr">${r.nl_summary}</div></div>
+      <div class="card">
+        <h3>Recommended Rollout</h3>
+        <div class="kv"><span>Gate decision</span><b style="color:${rec.gate_decision==='BLOCK'?'var(--high)':rec.gate_decision==='WARN'?'var(--med)':'var(--low)'}">${rec.gate_decision}</b></div>
+        <div class="kv"><span>Strategy</span><b>${rec.strategy} @ ${rec.canary_percent}%</b></div>
+        <div class="kv"><span>Suggested window</span><b>${rec.suggested_window}</b></div>
+        <div class="kv"><span>Senior approval</span><b>${rec.require_senior_approval?'required':'not required'}</b></div>
+        <div class="kv"><span>Second on-call</span><b>${rec.require_second_oncall?'required':'not required'}</b></div>
+        <div style="margin-top:10px">${rec.notes.map(n=>`<div class="note">${n}</div>`).join('')||'<span class="mut">No blocking conditions.</span>'}</div>
+      </div>
+      <div class="card" id="simCard"><h3>Similar Past Deploys</h3><div class="mut">searching institutional memory…</div></div>
+    </div>
+  </div>`;
+}
+async function loadSimilar(id){
+  const s=await j(`${API}/similar/${id}`);
+  const el=$('simCard');if(!el)return;
+  if(!s.neighbors.length){el.innerHTML='<h3>Similar Past Deploys</h3><div class="mut">No labelled history yet.</div>';return;}
+  const inc=s.incident_count, tone=inc>=s.neighbors.length/2?'var(--high)':inc>0?'var(--med)':'var(--low)';
+  el.innerHTML=`<h3>Similar Past Deploys</h3>
+    <div class="narr" style="border-color:${tone}">This deploy resembles ${s.neighbors.length} past deploys —
+      <b style="color:${tone}">${inc} of them caused an incident</b> (${Math.round(s.incident_rate*100)}% incident rate, from ${s.n_pool} labelled deploys).</div>
+    <div style="margin-top:10px">${s.neighbors.map(n=>`
+      <div class="kv"><span><span class="dot ${n.risk_score}" style="display:inline-block;margin-right:6px"></span>${n.service_name}
+        <span class="mut" style="font-size:11px">· ${(n.deploy_timestamp||'').slice(0,10)} · sim ${n.similarity}</span></span>
+        <b style="color:${n.outcome==='incident'?'var(--high)':'var(--low)'}">${n.outcome}</b></div>`).join('')}</div>`;
+}
+function fmtv(v){const n=+v;return isNaN(n)?v:(Number.isInteger(n)?n:n.toFixed(1));}
+
+/* ---------- Simulator ---------- */
+const SIM=[
+  {k:'deploy_hour',label:'Deploy hour',min:0,max:23,step:1,fmt:v=>String(v).padStart(2,'0')+':00'},
+  {k:'lines_changed',label:'Lines changed',min:10,max:1500,step:10,fmt:v=>v},
+  {k:'oncall_engineers_available',label:'On-call engineers',min:1,max:6,step:1,fmt:v=>v},
+  {k:'is_oncall_senior',label:'Senior on call',min:0,max:1,step:1,fmt:v=>v?'yes':'no'},
+  {k:'has_rollback_plan',label:'Rollback plan',min:0,max:1,step:1,fmt:v=>v?'yes':'no'},
+];
+async function renderSim(){
+  if(!CURRENT||!CURRENT.deployment_id){return;}
+  // seed slider values from current deployment features via explain factors
+  const ex=await j(`${API}/explain/${CURRENT.deployment_id}`);
+  const fv={};ex.factors.forEach(f=>fv[f.feature]=+f.value);
+  $('simBody').innerHTML=`<div class="grid g2">
+    <div class="card"><h3>Adjust risk drivers — ${CURRENT.service_name}</h3>
+      ${SIM.map((s,i)=>{const v=fv[s.k]??s.min;return `<div class="simrow">
+        <div class="top"><span>${s.label}</span><span class="badge" id="lab_${s.k}">${s.fmt(v)}</span></div>
+        <input class="slider" style="width:100%" type="range" data-idx="${i}" id="sl_${s.k}" min="${s.min}" max="${s.max}" step="${s.step}" value="${v}"/>
+      </div>`;}).join('')}
+    </div>
+    <div class="card" id="simOut"><h3>Predicted risk</h3><div class="mut">Move a slider to compute.</div></div>
+  </div>`;
+  SIM.forEach((s,i)=>{
+    const el=$('sl_'+s.k);
+    el.addEventListener('input',()=>{$('lab_'+s.k).textContent=s.fmt(+el.value);runSim();});
+  });
+  runSim();
+}
+let simT=null;
+function runSim(){
+  clearTimeout(simT);
+  simT=setTimeout(async()=>{
+    const overrides={};SIM.forEach(s=>overrides[s.k]=+$('sl_'+s.k).value);
+    const r=await j(`${API}/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({deployment_id:CURRENT.deployment_id,overrides})});
+    const o=r.original,s=r.simulated,up=r.delta>0;
+    $('simOut').innerHTML=`<h3>Predicted risk</h3>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px" class="flash">
+        <div><div class="mut" style="font-size:12px">original</div>
+          <span class="pill ${o.risk_score}">${o.risk_score} ${pct(o.risk_probability)}</span></div>
+        <div style="font-size:22px;color:var(--mut)">→</div>
+        <div><div class="mut" style="font-size:12px">simulated</div>
+          <span class="pill ${s.risk_score}">${s.risk_score} ${pct(s.risk_probability)}</span></div>
+        <div style="margin-left:auto;font-weight:700;color:${up?'var(--high)':'var(--low)'}">
+          ${up?'▲':'▼'} ${Math.abs(r.delta*100).toFixed(1)} pts</div>
+      </div>
+      <div class="narr">${r.nl_summary}</div>
+      <div class="kv" style="margin-top:12px"><span>Recommended</span><b>${r.recommendation.strategy} @ ${r.recommendation.canary_percent}% · gate ${r.recommendation.gate_decision}</b></div>`;
+  },90);
+}
+
+/* ---------- Model ---------- */
+async function loadModel(){
+  const m=await j(`${API}/metrics`);
+  const c=m.comparison, cols=Object.keys(c);
+  const rows=['f1','recall_pos','roc_auc','pr_auc','brier'];
+  const rl={f1:'F1 (incident class)',recall_pos:'Incident recall',roc_auc:'ROC AUC',pr_auc:'PR AUC',brier:'Brier (↓ better)'};
+  const best=(metric)=>{let bn='',bv=-1e9;cols.forEach(k=>{let v=c[k][metric];if(v==null)return;if(metric==='brier')v=-v;if(v>bv){bv=v;bn=k;}});return bn;};
+  const xgb=cols.find(k=>k.includes('XGBOOST')), rules=cols.find(k=>k.includes('RULES'));
+  const lift=xgb&&rules?((c[xgb].f1-c[rules].f1)/Math.max(1e-6,c[rules].f1)*100):0;
+  const or=m.oracle_tier_recovery;
+  $('modelBody').innerHTML=`
+  <div class="grid g2">
+    <div class="card"><h3>Baseline comparison (held-out test, n=${m.n_test})</h3>
+      <table><tr><th>Metric</th>${cols.map(k=>`<th>${k.split(' ')[0]}</th>`).join('')}</tr>
+      ${rows.map(mt=>`<tr><td>${rl[mt]}</td>${cols.map(k=>{
+        const v=c[k][mt];const win=best(mt)===k;
+        return `<td class="${win?'win':''}">${v==null?'—':v.toFixed(3)}</td>`;}).join('')}</tr>`).join('')}
+      </table>
+      <div class="mut" style="font-size:12px;margin-top:10px">RULES = the exact gut-feel heuristic (late-night + big diff + thin on-call). XGBoost lifts incident-class F1 <b class="win">${lift.toFixed(0)}%</b> over it — proof the model found signal the generator didn't hand it as a rule.</div>
+    </div>
+    <div class="grid" style="align-content:start">
+      <div class="card"><h3>Does it just echo the generator?</h3>
+        <div class="kv"><span>Latent-tier macro-F1 recovery</span><b>${(or.macro_f1*100).toFixed(1)}%</b></div>
+        <div class="kv"><span>High-risk tier recall</span><b>${(or.recall_high*100).toFixed(1)}%</b></div>
+        <div class="kv"><span>Train incident base rate</span><b>${(m.train_incident_rate*100).toFixed(1)}%</b></div>
+        <div class="mut" style="font-size:12.5px;margin-top:10px">Labels are drawn <i>stochastically</i> from a latent risk with feature interactions + noise, so no deterministic rule exists to memorize — the model must recover a probability. Catching the costly High tier (recall ${(or.recall_high*100).toFixed(0)}%) is the metric that matters.</div>
+      </div>
+      <div class="card"><h3>Calibration (reliability)</h3>
+        <div id="calib"></div>
+        <div class="mut" style="font-size:12px;margin-top:6px">Predicted vs. observed incident rate per bin — a well-calibrated gate is what makes probability thresholds defensible in a CAB audit.</div>
+      </div>
+    </div>
+  </div>`;
+  drawCalib(m.calibration);
+}
+function drawCalib(bins){
+  const W=340,H=170,pad=28;
+  const X=v=>pad+v*(W-2*pad), Y=v=>H-pad-v*(H-2*pad);
+  const diag=`M ${X(0)} ${Y(0)} L ${X(1)} ${Y(1)}`;
+  const line=bins.map((b,i)=>`${i?'L':'M'} ${X(b.predicted)} ${Y(b.observed)}`).join(' ');
+  $('calib').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
+    <rect x="${pad}" y="${pad}" width="${W-2*pad}" height="${H-2*pad}" fill="none" stroke="#24304a"/>
+    <path d="${diag}" fill="none" stroke="#455066" stroke-dasharray="4 4"/>
+    <path d="${line}" fill="none" stroke="#4f8cff" stroke-width="2"/>
+    ${bins.map(b=>`<circle cx="${X(b.predicted)}" cy="${Y(b.observed)}" r="2.5" fill="#7aa2ff"/>`).join('')}
+    <text x="${pad}" y="${H-8}" fill="#8a99b3" font-size="10">predicted →</text>
+    <text x="6" y="${pad+6}" fill="#8a99b3" font-size="10" transform="rotate(-90 12,${pad+6})">observed</text>
+  </svg>`;
+}
+
+/* boot */
+initForm().then(loadDash);
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+{
+  "features": [
+    "service_criticality_tier",
+    "deploy_hour",
+    "is_weekend",
+    "lines_changed",
+    "files_changed",
+    "incidents_last_30d",
+    "days_since_last_incident",
+    "oncall_engineers_available",
+    "is_oncall_senior",
+    "has_rollback_plan",
+    "test_coverage_delta"
+  ],
+  "thresholds": {
+    "low_max": 0.2,
+    "high_min": 0.5
+  },
+  "base_value_logodds": 0.01474,
+  "best_iteration": 92,
+  "feature_medians": {
+    "service_criticality_tier": 2.0,
+    "deploy_hour": 11.0,
+    "is_weekend": 0.0,
+    "lines_changed": 64.0,
+    "files_changed": 3.0,
+    "incidents_last_30d": 1.0,
+    "days_since_last_incident": 23.0,
+    "oncall_engineers_available": 2.0,
+    "is_oncall_senior": 1.0,
+    "has_rollback_plan": 1.0,
+    "test_coverage_delta": 0.06
+  },
+  "train_incident_rate": 0.2779,
+  "comparison": {
+    "RULES (gut feeling)": {
+      "roc_auc": 0.701,
+      "pr_auc": 0.4496,
+      "brier": 0.1801,
+      "f1": 0.2659,
+      "recall_pos": 0.1681
+    },
+    "LOGREG (linear)": {
+      "roc_auc": 0.7788,
+      "pr_auc": 0.5816,
+      "brier": 0.1945,
+      "f1": 0.5822,
+      "recall_pos": 0.7311
+    },
+    "XGBOOST (DeployIQ)": {
+      "roc_auc": 0.7917,
+      "pr_auc": 0.6085,
+      "brier": 0.1828,
+      "f1": 0.5925,
+      "recall_pos": 0.7227
+    }
+  },
+  "oracle_tier_recovery": {
+    "macro_f1": 0.4869,
+    "recall_low": 0.3885,
+    "recall_med": 0.323,
+    "recall_high": 0.9814
+  },
+  "calibration": [
+    {
+      "bin": "0.0-0.1",
+      "predicted": 0.083,
+      "observed": 0.062,
+      "n": 113
+    },
+    {
+      "bin": "0.1-0.2",
+      "predicted": 0.151,
+      "observed": 0.063,
+      "n": 537
+    },
+    {
+      "bin": "0.2-0.3",
+      "predicted": 0.248,
+      "observed": 0.104,
+      "n": 441
+    },
+    {
+      "bin": "0.3-0.4",
+      "predicted": 0.351,
+      "observed": 0.193,
+      "n": 373
+    },
+    {
+      "bin": "0.4-0.5",
+      "predicted": 0.447,
+      "observed": 0.214,
+      "n": 337
+    },
+    {
+      "bin": "0.5-0.6",
+      "predicted": 0.549,
+      "observed": 0.334,
+      "n": 356
+    },
+    {
+      "bin": "0.6-0.7",
+      "predicted": 0.649,
+      "observed": 0.413,
+      "n": 298
+    },
+    {
+      "bin": "0.7-0.8",
+      "predicted": 0.749,
+      "observed": 0.564,
+      "n": 287
+    },
+    {
+      "bin": "0.8-0.9",
+      "predicted": 0.848,
+      "observed": 0.753,
+      "n": 194
+    },
+    {
+      "bin": "0.9-1.0",
+      "predicted": 0.922,
+      "observed": 0.812,
+      "n": 64
+    }
+  ],
+  "n_train": 9000,
+  "n_test": 3000
+}
